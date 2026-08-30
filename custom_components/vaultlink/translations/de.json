@@ -1,0 +1,81 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Dieser VaultLink-Server ist bereits konfiguriert.",
+      "reauth_successful": "Das Service-Token wurde erfolgreich aktualisiert.",
+      "reconfigure_successful": "VaultLink wurde erfolgreich neu konfiguriert."
+    },
+    "error": {
+      "cannot_connect": "Verbindung zu VaultLink fehlgeschlagen.",
+      "insufficient_scope": "Dem Service-Token fehlt der Scope monitoring:read.",
+      "invalid_auth": "Das Service-Token ist ungültig oder abgelaufen.",
+      "invalid_url": "Gib eine absolute HTTP(S)-Root-URL ohne Zugangsdaten, Query, Fragment oder Unterpfad ein.",
+      "not_live": "VaultLink meldet, dass der Dienst nicht aktiv ist."
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {"service_token": "Neues Service-Token"},
+        "description": "Gib ein Ersatz-Token mit dem Scope monitoring:read ein.",
+        "title": "VaultLink neu authentifizieren"
+      },
+      "reconfigure": {
+        "data": {
+          "base_url": "VaultLink-Basis-URL",
+          "verify_ssl": "TLS-Zertifikat prüfen"
+        },
+        "description": "Ändere die Root-URL oder TLS-Prüfung. Das Deaktivieren der TLS-Zertifikatsprüfung schwächt die Verbindungssicherheit und sollte nur für einen vertrauenswürdigen lokalen Server verwendet werden.",
+        "title": "VaultLink neu konfigurieren"
+      },
+      "user": {
+        "data": {
+          "base_url": "VaultLink-Basis-URL",
+          "service_token": "Service-Token",
+          "verify_ssl": "TLS-Zertifikat prüfen"
+        },
+        "description": "Verbinde dich mit einem Service-Token mit dem Scope monitoring:read. Das Deaktivieren der TLS-Zertifikatsprüfung schwächt die Verbindungssicherheit und sollte nur für einen vertrauenswürdigen lokalen Server verwendet werden.",
+        "title": "Mit VaultLink verbinden"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {"ready": {"name": "Bereit"}},
+    "sensor": {
+      "monthly_downloads": {"name": "Monatliche Downloads"},
+      "monthly_previews": {"name": "Monatliche Vorschauen"},
+      "monthly_zip_downloads": {"name": "Monatliche ZIP-Downloads"},
+      "share_download_count": {"name": "Downloads"},
+      "share_expires_at": {"name": "Läuft ab am"},
+      "share_max_downloads": {"name": "Maximale Downloads"},
+      "share_max_upload_bytes": {"name": "Maximale Upload-Bytes"},
+      "share_max_upload_files": {"name": "Maximale Upload-Dateien"},
+      "share_status": {
+        "name": "Status",
+        "state": {
+          "available": "Verfügbar",
+          "download_limit_reached": "Download-Limit erreicht",
+          "expired": "Abgelaufen",
+          "inactive": "Inaktiv"
+        }
+      },
+      "share_uploaded_bytes": {"name": "Hochgeladene Bytes"},
+      "share_uploaded_files": {"name": "Hochgeladene Dateien"},
+      "shares_available": {"name": "Verfügbare Freigaben"},
+      "shares_download_limit_reached": {"name": "Freigaben mit erreichtem Download-Limit"},
+      "shares_expired": {"name": "Abgelaufene Freigaben"},
+      "shares_inactive": {"name": "Inaktive Freigaben"},
+      "shares_protected": {"name": "Geschützte Freigaben"},
+      "shares_total": {"name": "Freigaben gesamt"},
+      "storage_free_bytes": {"name": "Freier Speicher"},
+      "storage_total_bytes": {"name": "Gesamtspeicher"}
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {"summary_interval": "Summary-Abrufintervall"},
+        "data_description": {"summary_interval": "Sekunden zwischen Summary-Aktualisierungen (30–3600)."},
+        "title": "VaultLink-Optionen"
+      }
+    }
+  }
+}

@@ -15,13 +15,13 @@ jobs:
   hassfest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hacs/action@main
         env:
           REPOSITORY_REF: ${{ github.event.pull_request.head.sha || github.sha }}

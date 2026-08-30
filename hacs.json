@@ -1,5 +1,4 @@
 {
   "homeassistant": "2026.8.0",
-  "name": "VaultLink",
-  "render_readme": true
+  "name": "VaultLink"
 }

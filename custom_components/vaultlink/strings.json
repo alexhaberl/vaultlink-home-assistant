@@ -1,0 +1,91 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This VaultLink server is already configured.",
+      "reauth_successful": "The service token was updated successfully.",
+      "reconfigure_successful": "VaultLink was reconfigured successfully."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to VaultLink.",
+      "insufficient_scope": "The service token is missing the monitoring:read scope.",
+      "invalid_auth": "The service token is invalid or expired.",
+      "invalid_url": "Enter an absolute HTTP(S) root URL without credentials, query, fragment, or subpath.",
+      "not_live": "VaultLink reports that it is not live."
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "service_token": "New service token"
+        },
+        "description": "Enter a replacement VaultLink service token with the monitoring:read scope.",
+        "title": "Reauthenticate VaultLink"
+      },
+      "reconfigure": {
+        "data": {
+          "base_url": "VaultLink base URL",
+          "verify_ssl": "Verify TLS certificate"
+        },
+        "description": "Update the root URL or TLS verification. Disabling TLS certificate verification weakens connection security and should only be used for a trusted local server.",
+        "title": "Reconfigure VaultLink"
+      },
+      "user": {
+        "data": {
+          "base_url": "VaultLink base URL",
+          "service_token": "Service token",
+          "verify_ssl": "Verify TLS certificate"
+        },
+        "description": "Connect using a service token with the monitoring:read scope. Disabling TLS certificate verification weakens connection security and should only be used for a trusted local server.",
+        "title": "Connect to VaultLink"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "ready": {
+        "name": "Ready"
+      }
+    },
+    "sensor": {
+      "monthly_downloads": {"name": "Monthly downloads"},
+      "monthly_previews": {"name": "Monthly previews"},
+      "monthly_zip_downloads": {"name": "Monthly ZIP downloads"},
+      "share_download_count": {"name": "Downloads"},
+      "share_expires_at": {"name": "Expires at"},
+      "share_max_downloads": {"name": "Maximum downloads"},
+      "share_max_upload_bytes": {"name": "Maximum upload bytes"},
+      "share_max_upload_files": {"name": "Maximum upload files"},
+      "share_status": {
+        "name": "Status",
+        "state": {
+          "available": "Available",
+          "download_limit_reached": "Download limit reached",
+          "expired": "Expired",
+          "inactive": "Inactive"
+        }
+      },
+      "share_uploaded_bytes": {"name": "Uploaded bytes"},
+      "share_uploaded_files": {"name": "Uploaded files"},
+      "shares_available": {"name": "Available shares"},
+      "shares_download_limit_reached": {"name": "Download limit reached shares"},
+      "shares_expired": {"name": "Expired shares"},
+      "shares_inactive": {"name": "Inactive shares"},
+      "shares_protected": {"name": "Protected shares"},
+      "shares_total": {"name": "Total shares"},
+      "storage_free_bytes": {"name": "Free storage"},
+      "storage_total_bytes": {"name": "Total storage"}
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "summary_interval": "Summary polling interval"
+        },
+        "data_description": {
+          "summary_interval": "Seconds between summary updates (30–3600)."
+        },
+        "title": "VaultLink options"
+      }
+    }
+  }
+}

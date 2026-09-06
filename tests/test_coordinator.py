@@ -22,6 +22,8 @@ from custom_components.vaultlink.coordinator import (
     VaultLinkSharesCoordinator,
 )
 
+from .test_api import FakeResponse, make_client
+
 
 def share(share_id: int) -> MonitoringShare:
     """Return one redacted share model."""
@@ -87,8 +89,8 @@ async def test_share_pagination(hass) -> None:
     """Follow cursors and merge redacted pages by stable share ID."""
     client = AsyncMock()
     client.async_get_shares_page.side_effect = [
-        SharesPage(shares=(share(1), share(2)), next_cursor="next"),
-        SharesPage(shares=(share(3),), next_cursor=None),
+        SharesPage(shares=(share(3), share(2)), next_cursor=2),
+        SharesPage(shares=(share(1),), next_cursor=None),
     ]
     coordinator = VaultLinkSharesCoordinator(
         hass, client, MockConfigEntry(domain="vaultlink")
@@ -97,18 +99,57 @@ async def test_share_pagination(hass) -> None:
     assert set(data.shares) == {1, 2, 3}
     assert data.truncated is False
     assert client.async_get_shares_page.await_count == 2
-    assert client.async_get_shares_page.await_args_list[1].kwargs["cursor"] == "next"
+    assert client.async_get_shares_page.await_args_list[1].kwargs["cursor"] == 2
+
+
+async def test_more_than_200_shares_with_vaultlink_070_responses(hass) -> None:
+    """Exercise numeric wire cursors through the real client and coordinator."""
+    client, session = make_client(
+        FakeResponse(
+            200,
+            {
+                "shares": [
+                    {"id": item, "status": "available"} for item in range(201, 1, -1)
+                ],
+                "next_cursor": 2,
+            },
+        ),
+        FakeResponse(
+            200,
+            {
+                "shares": [{"id": 1, "status": "expired"}],
+                "next_cursor": None,
+            },
+        ),
+    )
+    coordinator = VaultLinkSharesCoordinator(
+        hass, client, MockConfigEntry(domain="vaultlink")
+    )
+    data = await coordinator._async_update_data()
+    assert data.loaded_count == 201
+    assert set(data.shares) == set(range(1, 202))
+    assert data.shares[1].status == "expired"
+    assert data.truncated is False
+    assert len(session.calls) == 2
+    assert session.calls[0][1]["params"] == {"limit": 200, "status": "all"}
+    assert session.calls[1][1]["params"] == {
+        "limit": 200,
+        "status": "all",
+        "cursor": 2,
+    }
 
 
 async def test_share_poll_is_bounded_and_warns_once(hass, caplog) -> None:
     """Stop at 1,000 shares while preserving the separate summary contract."""
     client = AsyncMock()
 
-    async def page(*, limit: int, cursor: str | None, status: str) -> SharesPage:
-        start = int(cursor or 0)
+    async def page(*, limit: int, cursor: int | None, status: str) -> SharesPage:
+        start = cursor if cursor is not None else 1201
         return SharesPage(
-            shares=tuple(share(item) for item in range(start, start + limit)),
-            next_cursor=str(start + limit),
+            shares=tuple(
+                share(item) for item in range(start - 1, start - limit - 1, -1)
+            ),
+            next_cursor=start - limit,
         )
 
     client.async_get_shares_page.side_effect = page
@@ -127,8 +168,8 @@ async def test_repeated_cursor_fails(hass) -> None:
     """Defend against a malformed pagination loop."""
     client = AsyncMock()
     client.async_get_shares_page.side_effect = [
-        SharesPage(shares=(share(1),), next_cursor="same"),
-        SharesPage(shares=(share(2),), next_cursor="same"),
+        SharesPage(shares=(share(1),), next_cursor=1),
+        SharesPage(shares=(share(2),), next_cursor=1),
     ]
     coordinator = VaultLinkSharesCoordinator(
         hass, client, MockConfigEntry(domain="vaultlink")
@@ -141,11 +182,11 @@ async def test_duplicate_pages_are_bounded(hass) -> None:
     """Bound malformed pagination even when pages repeat the same share IDs."""
     client = AsyncMock()
 
-    async def page(*, limit: int, cursor: str | None, status: str) -> SharesPage:
-        current = int(cursor or 0)
+    async def page(*, limit: int, cursor: int | None, status: str) -> SharesPage:
+        current = cursor or 0
         return SharesPage(
             shares=(share(1),),
-            next_cursor=str(current + 1),
+            next_cursor=current + 1,
         )
 
     client.async_get_shares_page.side_effect = page

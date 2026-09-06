@@ -19,6 +19,8 @@ from custom_components.vaultlink.api import (
 )
 
 SUMMARY = {
+    "generated_at": "2026-09-06T12:00:00Z",
+    "version": "0.7.0",
     "shares": {
         "total": 6,
         "available": 2,
@@ -27,10 +29,12 @@ SUMMARY = {
         "expired": 1,
         "download_limit_reached": 1,
     },
-    "activity_this_month": {
-        "downloads": 21,
-        "zip_downloads": 3,
-        "previews": 8,
+    "transfers": {
+        "month": "2026-09",
+        "download": 21,
+        "zip_download": 3,
+        "preview": 8,
+        "statistics_started_at": "2026-08-01T00:00:00Z",
     },
     "storage": {"free_bytes": 1024, "total_bytes": 4096},
 }
@@ -146,21 +150,22 @@ async def test_authorization_header_and_pagination() -> None:
                         "uploaded_bytes": 10,
                         "uploaded_files": 1,
                         "max_downloads": 5,
-                        "max_upload_total_size": 20,
+                        "max_upload_total_size_bytes": 20,
+                        "max_upload_size_bytes": 10,
                         "max_upload_files": 3,
                     }
                 ],
-                "next_cursor": "next",
+                "next_cursor": 7,
             },
         )
     )
-    page = await client.async_get_shares_page(limit=200, cursor="cursor")
+    page = await client.async_get_shares_page(limit=200, cursor=8)
 
     url, kwargs = session.calls[0]
     assert url.endswith("/api/v2/monitoring/shares")
     assert kwargs["headers"] == {"Authorization": "Bearer secret-token"}
-    assert kwargs["params"] == {"limit": 200, "status": "all", "cursor": "cursor"}
-    assert page.next_cursor == "next"
+    assert kwargs["params"] == {"limit": 200, "status": "all", "cursor": 8}
+    assert page.next_cursor == 7
     assert page.shares[0].share_id == 7
     assert page.shares[0].max_upload_bytes == 20
     assert page.shares[0].expires_at is not None
@@ -246,6 +251,112 @@ async def test_flat_summary_is_supported() -> None:
     assert (await client.async_get_summary()).storage_total_bytes == 4096
 
 
+async def test_vaultlink_070_summary() -> None:
+    """Read the wire format defined by VaultLink's MonitoringSummaryResponse."""
+    client, _session = make_client(FakeResponse(200, SUMMARY))
+    summary = await client.async_get_summary()
+    assert summary.shares_total == 6
+    assert summary.shares_available == 2
+    assert summary.shares_protected == 1
+    assert summary.shares_inactive == 1
+    assert summary.shares_expired == 1
+    assert summary.shares_download_limit_reached == 1
+    assert summary.monthly_downloads == 21
+    assert summary.monthly_zip_downloads == 3
+    assert summary.monthly_previews == 8
+    assert summary.storage_free_bytes == 1024
+    assert summary.storage_total_bytes == 4096
+
+
+async def test_storage_probe_failure_preserves_other_metrics() -> None:
+    """Treat explicit null storage as missing capacity, not a failed summary."""
+    client, _session = make_client(FakeResponse(200, {**SUMMARY, "storage": None}))
+    summary = await client.async_get_summary()
+    assert summary.storage_free_bytes is None
+    assert summary.storage_total_bytes is None
+    assert summary.shares_total == 6
+    assert summary.monthly_downloads == 21
+
+
+@pytest.mark.parametrize(
+    "storage",
+    [
+        {},
+        [],
+        False,
+        {"free_bytes": None, "total_bytes": 4096},
+        {"free_bytes": 1024, "total_bytes": -1},
+    ],
+)
+async def test_malformed_storage_is_rejected(storage: object) -> None:
+    """Only the documented null object disables storage validation."""
+    client, _session = make_client(FakeResponse(200, {**SUMMARY, "storage": storage}))
+    with pytest.raises(VaultLinkResponseError):
+        await client.async_get_summary()
+
+
+async def test_missing_storage_is_rejected() -> None:
+    """Do not mistake a missing required field for an explicit probe failure."""
+    payload = {key: value for key, value in SUMMARY.items() if key != "storage"}
+    client, _session = make_client(FakeResponse(200, payload))
+    with pytest.raises(VaultLinkResponseError):
+        await client.async_get_summary()
+
+
+@pytest.mark.parametrize("field", ["download", "zip_download", "preview"])
+@pytest.mark.parametrize("value", [None, True, -1, "1"])
+async def test_invalid_transfer_counts(field: str, value: object) -> None:
+    """Validate each of the actual API's monthly transfer counters."""
+    payload = {**SUMMARY, "transfers": {**SUMMARY["transfers"], field: value}}
+    client, _session = make_client(FakeResponse(200, payload))
+    with pytest.raises(VaultLinkResponseError):
+        await client.async_get_summary()
+
+
+@pytest.mark.parametrize("cursor", [0, -1, True, False, "7", "", 1.5, {}])
+async def test_invalid_numeric_response_cursor(cursor: Any) -> None:
+    """Reject nonpositive or noninteger wire cursors before following them."""
+    client, _session = make_client(
+        FakeResponse(200, {"shares": [], "next_cursor": cursor})
+    )
+    with pytest.raises(VaultLinkResponseError, match="cursor"):
+        await client.async_get_shares_page(limit=200)
+
+
+@pytest.mark.parametrize("cursor", [0, -1, True, "7"])
+async def test_invalid_request_cursor(cursor: Any) -> None:
+    """Reject invalid request cursors without making a request."""
+    client, session = make_client()
+    with pytest.raises(ValueError, match="cursor"):
+        await client.async_get_shares_page(limit=200, cursor=cursor)
+    assert not session.calls
+
+
+@pytest.mark.parametrize("limit", [None, 0, 100])
+async def test_total_upload_limit_is_distinct_from_per_file_limit(
+    limit: int | None,
+) -> None:
+    """Keep the total byte cap distinct from the per-file size cap."""
+    client, _session = make_client(
+        FakeResponse(
+            200,
+            {
+                "shares": [
+                    {
+                        "id": 1,
+                        "status": "available",
+                        "max_upload_total_size_bytes": limit,
+                        "max_upload_size_bytes": 10,
+                    }
+                ],
+                "next_cursor": None,
+            },
+        )
+    )
+    page = await client.async_get_shares_page(limit=200)
+    assert page.shares[0].max_upload_bytes == limit
+
+
 @pytest.mark.parametrize("bad_value", [-1, True, "6", None])
 async def test_invalid_summary_values(bad_value: object) -> None:
     """Reject negative and non-integer monitoring counters."""
@@ -304,12 +415,12 @@ async def test_share_aliases_and_nested_cursor() -> None:
                         "download_limit": None,
                     }
                 ],
-                "pagination": {"next_cursor": "next"},
+                "pagination": {"next_cursor": 7},
             },
         )
     )
     page = await client.async_get_shares_page(limit=1, status="available")
-    assert page.next_cursor == "next"
+    assert page.next_cursor == 7
     assert page.shares[0].uploaded_bytes == 10
     assert page.shares[0].expires_at is not None
     assert page.shares[0].expires_at.utcoffset() is not None

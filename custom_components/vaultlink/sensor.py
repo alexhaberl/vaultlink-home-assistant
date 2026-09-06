@@ -28,7 +28,7 @@ type ShareSensorValue = int | str | datetime | None
 class VaultLinkSummaryDescription(SensorEntityDescription):
     """Describe a VaultLink summary sensor."""
 
-    value_fn: Callable[[MonitoringSummary], int]
+    value_fn: Callable[[MonitoringSummary], int | None]
 
 
 SUMMARY_DESCRIPTIONS = (
@@ -240,9 +240,14 @@ class VaultLinkSummarySensor(VaultLinkEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> int:
+    def native_value(self) -> int | None:
         """Return the latest aggregate value."""
         return self.entity_description.value_fn(self.coordinator.data.summary)
+
+    @property
+    def available(self) -> bool:
+        """Keep other metrics available when the storage probe fails."""
+        return super().available and self.native_value is not None
 
 
 class VaultLinkShareSensor(VaultLinkShareEntity, SensorEntity):

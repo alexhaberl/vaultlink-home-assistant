@@ -34,7 +34,7 @@
           "service_token": "Service token",
           "verify_ssl": "Verify TLS certificate"
         },
-        "description": "Connect using a service token with the monitoring:read scope. Disabling TLS certificate verification weakens connection security and should only be used for a trusted local server.",
+        "description": "This integration version requires VaultLink 0.7.0 or newer. Stay on integration 0.1.0 while running VaultLink 0.6.0. Connect using a service token with the monitoring:read scope. Disabling TLS certificate verification weakens connection security and should only be used for a trusted local server.",
         "title": "Connect to VaultLink"
       }
     }

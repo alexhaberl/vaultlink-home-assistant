@@ -61,8 +61,8 @@ class MonitoringSummary:
     monthly_downloads: int
     monthly_zip_downloads: int
     monthly_previews: int
-    storage_free_bytes: int
-    storage_total_bytes: int
+    storage_free_bytes: int | None
+    storage_total_bytes: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +85,7 @@ class SharesPage:
     """One monitoring shares page."""
 
     shares: tuple[MonitoringShare, ...]
-    next_cursor: str | None
+    next_cursor: int | None
 
 
 class VaultLinkApiClient:
@@ -125,7 +125,7 @@ class VaultLinkApiClient:
         self,
         *,
         limit: int,
-        cursor: str | None = None,
+        cursor: int | None = None,
         status: str = "all",
     ) -> SharesPage:
         """Return one redacted share page."""
@@ -135,6 +135,8 @@ class VaultLinkApiClient:
             raise ValueError("invalid share status")
         params: dict[str, str | int] = {"limit": limit, "status": status}
         if cursor is not None:
+            if not _is_int(cursor) or cursor <= 0:
+                raise ValueError("cursor must be a positive integer")
             params["cursor"] = cursor
         payload = await self._async_get(
             "/monitoring/shares", authenticated=True, params=params
@@ -225,12 +227,9 @@ def _parse_health(payload: Mapping[str, Any]) -> Health:
 
 def _parse_summary(payload: Mapping[str, Any]) -> MonitoringSummary:
     shares = _mapping(payload.get("shares"))
-    monthly = _mapping(
-        payload.get("monthly")
-        or payload.get("activity_this_month")
-        or payload.get("month")
-    )
+    monthly = _mapping(payload.get("transfers"))
     storage = _mapping(payload.get("storage"))
+    storage_unavailable = "storage" in payload and payload["storage"] is None
     return MonitoringSummary(
         shares_total=_required_int(payload, shares, "shares_total", "total"),
         shares_available=_required_int(
@@ -248,19 +247,21 @@ def _parse_summary(payload: Mapping[str, Any]) -> MonitoringSummary:
             "download_limit_reached",
         ),
         monthly_downloads=_required_int(
-            payload, monthly, "monthly_downloads", "downloads"
+            payload, monthly, "monthly_downloads", "download"
         ),
         monthly_zip_downloads=_required_int(
-            payload, monthly, "monthly_zip_downloads", "zip_downloads"
+            payload, monthly, "monthly_zip_downloads", "zip_download"
         ),
-        monthly_previews=_required_int(
-            payload, monthly, "monthly_previews", "previews"
+        monthly_previews=_required_int(payload, monthly, "monthly_previews", "preview"),
+        storage_free_bytes=(
+            None
+            if storage_unavailable
+            else _required_int(payload, storage, "storage_free_bytes", "free_bytes")
         ),
-        storage_free_bytes=_required_int(
-            payload, storage, "storage_free_bytes", "free_bytes"
-        ),
-        storage_total_bytes=_required_int(
-            payload, storage, "storage_total_bytes", "total_bytes"
+        storage_total_bytes=(
+            None
+            if storage_unavailable
+            else _required_int(payload, storage, "storage_total_bytes", "total_bytes")
         ),
     )
 
@@ -274,7 +275,7 @@ def _parse_shares_page(payload: Mapping[str, Any]) -> SharesPage:
     if cursor is None:
         pagination = _mapping(payload.get("pagination"))
         cursor = pagination.get("next_cursor")
-    if cursor is not None and (not isinstance(cursor, str) or not cursor):
+    if cursor is not None and (not _is_int(cursor) or cursor <= 0):
         raise VaultLinkResponseError("VaultLink returned an invalid cursor")
     return SharesPage(shares=shares, next_cursor=cursor)
 
@@ -302,6 +303,7 @@ def _parse_share(payload: Mapping[str, Any]) -> MonitoringShare:
         ),
         max_upload_bytes=_optional_int(
             payload,
+            "max_upload_total_size_bytes",
             "max_upload_bytes",
             "max_upload_total_size",
             default=None,

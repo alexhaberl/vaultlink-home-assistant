@@ -1,7 +1,7 @@
 [project]
 name = "vaultlink-home-assistant"
 version = "0.2.0"
-description = "Read-only Home Assistant monitoring for VaultLink 0.7.0+; keep integration 0.1.0 for VaultLink 0.6.0"
+description = "Read-only Home Assistant monitoring; requires VaultLink 0.7.0 or newer"
 readme = "README.md"
 requires-python = ">=3.14.2"
 license = "MIT"

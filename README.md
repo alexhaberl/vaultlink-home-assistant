@@ -7,15 +7,15 @@ A local, read-only Home Assistant custom integration for monitoring a VaultLink
 installation. It uses VaultLink's `monitoring:read` service-token scope and does
 not expose buttons, services, switches, or any other write operation.
 
-> **Version compatibility:** Integration **0.2.0 requires VaultLink 0.7.0 or
-> newer** and is not compatible with VaultLink 0.6.0. **Stay on integration
-> 0.1.0 while your server runs VaultLink 0.6.0.** Upgrade VaultLink first,
-> then update this integration in HACS.
+> **Requirements:** This integration requires **VaultLink 0.7.0 or newer**.
+> VaultLink 0.6.0 does not provide the required service-token monitoring API
+> and is not supported by any version of this integration. Upgrade VaultLink
+> before installing the integration.
 >
-> **Versionshinweis:** Diese Plugin-Version **0.2.0 ist erst ab VaultLink 0.7.0
-> kompatibel**. Solange VaultLink **0.6.0** aktiv ist, bitte bei der bisherigen
-> Plugin-Version **0.1.0** bleiben. Zuerst VaultLink aktualisieren, danach das
-> Plugin in HACS.
+> **Voraussetzungen:** Diese Integration benötigt **VaultLink ab 0.7.0**.
+> VaultLink 0.6.0 stellt die benötigte Monitoring-API mit Service-Tokens nicht
+> bereit und wird von keiner Plugin-Version unterstützt. Zuerst VaultLink
+> aktualisieren, danach die Integration installieren.
 
 ## Requirements
 

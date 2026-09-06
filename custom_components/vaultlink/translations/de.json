@@ -32,7 +32,7 @@
           "service_token": "Service-Token",
           "verify_ssl": "TLS-Zertifikat prüfen"
         },
-        "description": "Verbinde dich mit einem Service-Token mit dem Scope monitoring:read. Das Deaktivieren der TLS-Zertifikatsprüfung schwächt die Verbindungssicherheit und sollte nur für einen vertrauenswürdigen lokalen Server verwendet werden.",
+        "description": "Diese Plugin-Version erfordert VaultLink 0.7.0 oder neuer. Solange VaultLink 0.6.0 aktiv ist, bleibe bei Plugin-Version 0.1.0. Verbinde dich mit einem Service-Token mit dem Scope monitoring:read. Das Deaktivieren der TLS-Zertifikatsprüfung schwächt die Verbindungssicherheit und sollte nur für einen vertrauenswürdigen lokalen Server verwendet werden.",
         "title": "Mit VaultLink verbinden"
       }
     }

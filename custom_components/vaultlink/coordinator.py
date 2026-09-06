@@ -107,8 +107,8 @@ class VaultLinkSharesCoordinator(DataUpdateCoordinator[VaultLinkSharesData]):
 
     async def _async_update_data(self) -> VaultLinkSharesData:
         shares: dict[int, MonitoringShare] = {}
-        cursor: str | None = None
-        seen_cursors: set[str] = set()
+        cursor: int | None = None
+        seen_cursors: set[int] = set()
         truncated = False
         pages_loaded = 0
         max_pages = (SHARES_POLL_LIMIT + SHARES_PAGE_SIZE - 1) // SHARES_PAGE_SIZE

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
@@ -92,6 +93,42 @@ async def test_main_entities(hass, summary) -> None:
     assert total.available is True
     main.last_update_success = False
     assert total.available is False
+
+
+async def test_storage_failure_and_recovery(hass, summary) -> None:
+    """Only storage entities become unavailable and they recover in place."""
+    entry, main, _shares = setup_runtime(hass, summary)
+    sensors = {
+        description.key: VaultLinkSummarySensor(entry, description)
+        for description in SUMMARY_DESCRIPTIONS
+    }
+    original_ids = {key: sensor.unique_id for key, sensor in sensors.items()}
+    main.async_set_updated_data(
+        replace(
+            main.data,
+            summary=replace(summary, storage_free_bytes=None, storage_total_bytes=None),
+        )
+    )
+    assert main.last_update_success
+    for key, sensor in sensors.items():
+        if key.startswith("storage_"):
+            assert sensor.available is False
+            assert sensor.native_value is None
+        else:
+            assert sensor.available is True
+            assert sensor.native_value == getattr(summary, key)
+
+    main.async_set_updated_data(
+        replace(
+            main.data,
+            summary=replace(summary, storage_free_bytes=0),
+        )
+    )
+    for key, sensor in sensors.items():
+        assert sensor.available is True
+        assert sensor.unique_id == original_ids[key]
+    assert sensors["storage_free_bytes"].native_value == 0
+    assert sensors["storage_total_bytes"].native_value == 4096
 
 
 async def test_dynamic_and_disappearing_shares(hass, summary) -> None:
